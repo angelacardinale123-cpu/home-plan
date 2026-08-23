@@ -118,7 +118,9 @@
   .t{flex:1;padding-top:.1rem}
   .t small{display:block;color:var(--ink-2);font-size:.86rem;line-height:1.4;
     text-decoration:none;margin-top:.12rem}
-  label.task input:checked ~ .t small{text-decoration:line-through}
+  /* Strike the task itself, not its hint. A line through two lines of small
+     grey text just reads as noise. */
+  label.task input:checked ~ .t small{text-decoration:none;opacity:.75}
   ul.steps .num{flex:none;width:1.55rem;color:var(--ink-2);font-weight:700;
     font-size:.95rem;padding-top:.2rem}
 
