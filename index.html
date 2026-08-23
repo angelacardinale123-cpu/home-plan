@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="A simple weekly cleaning plan for a shared apartment.">
+<meta name="theme-color" content="#0E5C57">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cleaning">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Our cleaning plan</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧼</text></svg>">
+<style>
+  /* ------------------------------------------------------------------ tokens */
+  :root{
+    --paper:#F2F5F3; --card:#FFFFFF; --ink:#18211D; --ink-2:#525E57;
+    --line:#C6D1CB; --line-2:#E9EEEB;
+    --accent:#0E5C57; --accent-soft:#E1EFED;
+    --done:#1C6B3C;   --done-soft:#E4F1E8;
+    --a:#0E5C57;      --b:#8F5407;
+    --shadow:0 1px 2px rgba(24,33,29,.05), 0 3px 12px rgba(24,33,29,.045);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#111614; --card:#1A211E; --ink:#E9EFEB; --ink-2:#A9B6AE;
+      --line:#3A4A43; --line-2:#252F2A;
+      --accent:#74D6CB; --accent-soft:#123230;
+      --done:#6FD292;   --done-soft:#12301F;
+      --a:#74D6CB;      --b:#F2BD6E;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 3px 12px rgba(0,0,0,.3);
+    }
+  }
+
+  /* -------------------------------------------------------------------- base */
+  *{box-sizing:border-box}
+  html{background:var(--paper)}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:18px;line-height:1.5;-webkit-text-size-adjust:100%;
+  }
+  h1,h2,h3{line-height:1.2;margin:0;text-wrap:balance;letter-spacing:-.01em}
+  p{margin:0}
+  button{font:inherit}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+  .app{max-width:34rem;margin:0 auto;padding:0 1rem 8rem;
+       padding-bottom:calc(8rem + env(safe-area-inset-bottom))}
+
+  /* ------------------------------------------------------------------ views */
+  .view{display:none}
+  .app[data-view="today"] .view-today,
+  .app[data-view="week"]  .view-week,
+  .app[data-view="rooms"] .view-rooms,
+  .app[data-view="about"] .view-about{display:block}
+  .room-detail{display:none}
+  .app[data-room=""] .room-detail{display:none}
+  .app:not([data-room=""]) .view-rooms .roomlist,
+  .app:not([data-room=""]) .view-rooms > .head{display:none}
+  .app[data-room="kitchen"] #r-kitchen, .app[data-room="bathroom"] #r-bathroom,
+  .app[data-room="living"] #r-living,   .app[data-room="dining"] #r-dining,
+  .app[data-room="laundry"] #r-laundry, .app[data-room="bedroom"] #r-bedroom{display:block}
+
+  .app:not([data-who="A"]):not([data-who="B"]) .after-pick,
+  .app:not([data-who="A"]):not([data-who="B"]) nav{display:none!important}
+  .app[data-who="A"] .picker, .app[data-who="B"] .picker{display:none}
+  .app[data-who="A"] [data-only="B"], .app[data-who="B"] [data-only="A"]{display:none}
+
+  /* ----------------------------------------------------------------- picker */
+  .picker{padding:3.5rem 0 0;text-align:center}
+  .picker h1{font-size:1.8rem}
+  .picker > p{color:var(--ink-2);margin:.7rem 0 2rem}
+  .pickrow{display:grid;gap:.85rem}
+  .pick{display:flex;align-items:center;gap:.9rem;width:100%;text-align:left;
+    background:var(--card);border:2px solid var(--line);border-radius:16px;
+    padding:1rem 1.1rem;min-height:72px;cursor:pointer;color:var(--ink);box-shadow:var(--shadow)}
+  .pick:hover{border-color:var(--accent)}
+  .pick .av{width:2.9rem;height:2.9rem;border-radius:999px;flex:none;display:grid;
+    place-items:center;font-weight:800;font-size:1.1rem;color:#fff}
+  .pick.a .av{background:var(--a)} .pick.b .av{background:var(--b)}
+  @media (prefers-color-scheme: dark){ .pick .av{color:#111614} }
+  .pick strong{font-size:1.15rem;font-weight:750}
+
+  /* ----------------------------------------------------------------- header */
+  header{display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+    padding:1.35rem 0 .3rem}
+  .me{display:flex;align-items:center;gap:.55rem;color:var(--ink-2);font-size:.92rem}
+  .me .av{width:1.85rem;height:1.85rem;border-radius:999px;display:grid;place-items:center;
+    font-weight:800;font-size:.8rem;color:#fff;flex:none}
+  @media (prefers-color-scheme: dark){ .me .av{color:#111614} }
+  .me[data-p="A"] .av{background:var(--a)} .me[data-p="B"] .av{background:var(--b)}
+  .linkbtn{background:none;border:0;color:var(--ink-2);text-decoration:underline;
+    cursor:pointer;padding:.6rem .2rem;min-height:44px;font-size:.9rem}
+  .linkbtn:hover{color:var(--ink)}
+  .head{padding:.4rem 0 0}
+  .head h2{font-size:1.65rem}
+  .head > p{color:var(--ink-2);margin:.35rem 0 0;font-size:.98rem}
+
+  /* ------------------------------------------------------------------ cards */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:.35rem 1.05rem;margin:1.1rem 0 0;box-shadow:var(--shadow)}
+  .card.pad{padding:1.05rem}
+  .card h3{font-size:.78rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-2);padding:.9rem 0 .1rem;margin:0}
+
+  /* ------------------------------------------------------------------ tasks */
+  ul.tasks,ul.steps{list-style:none;margin:0;padding:0}
+  ul.tasks li + li,ul.steps li + li{border-top:1px solid var(--line-2)}
+  label.task{display:flex;gap:.85rem;align-items:flex-start;padding:.85rem .1rem;
+    min-height:56px;cursor:pointer}
+  label.task input{appearance:none;-webkit-appearance:none;flex:none;margin:.05rem 0 0;
+    width:1.7rem;height:1.7rem;border:2px solid var(--ink-2);border-radius:7px;
+    background:var(--card);cursor:pointer;display:grid;place-items:center}
+  label.task input:checked{background:var(--done);border-color:var(--done)}
+  label.task input:checked::after{content:"";width:.45rem;height:.88rem;
+    border:solid var(--card);border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-2px)}
+  label.task input:checked ~ .t{color:var(--ink-2);text-decoration:line-through}
+  .t{flex:1;padding-top:.1rem}
+  .t small{display:block;color:var(--ink-2);font-size:.86rem;line-height:1.4;
+    text-decoration:none;margin-top:.12rem}
+  label.task input:checked ~ .t small{text-decoration:line-through}
+  ul.steps .num{flex:none;width:1.55rem;color:var(--ink-2);font-weight:700;
+    font-size:.95rem;padding-top:.2rem}
+
+  /* --------------------------------------------------------------- progress */
+  .foot{display:flex;align-items:center;gap:.7rem;padding:.85rem .1rem;
+    border-top:1px solid var(--line-2);flex-wrap:wrap}
+  .bar{flex:1;min-width:5rem;height:8px;border-radius:99px;background:var(--line-2);overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:var(--done);border-radius:99px}
+  .cnt{color:var(--ink-2);font-size:.88rem;font-variant-numeric:tabular-nums}
+  .reset{background:none;border:1px solid var(--line);border-radius:9px;color:var(--ink-2);
+    cursor:pointer;font-size:.84rem;font-weight:650;padding:.45rem .7rem;min-height:44px}
+  .reset:hover{border-color:var(--ink-2);color:var(--ink)}
+  .alldone{display:none;margin:1.1rem 0 0;padding:1rem 1.05rem;border-radius:16px;
+    background:var(--done-soft);border:1px solid var(--done);color:var(--ink)}
+  .alldone strong{color:var(--done)}
+  .card.is-done + .alldone{display:block}
+
+  /* ------------------------------------------------------------------ rooms */
+  .roomlist{list-style:none;margin:1.1rem 0 0;padding:0;display:grid;gap:.7rem}
+  .roomlist button{display:flex;align-items:center;gap:.9rem;width:100%;text-align:left;
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:.95rem 1.05rem;min-height:66px;cursor:pointer;color:var(--ink);box-shadow:var(--shadow)}
+  .roomlist button:hover{border-color:var(--accent)}
+  .roomlist .ic{font-size:1.5rem;flex:none;width:2rem;text-align:center}
+  .roomlist strong{display:block;font-size:1.05rem;font-weight:700}
+  .roomlist .sub{display:block;color:var(--ink-2);font-size:.87rem}
+  .roomlist .chev{margin-left:auto;color:var(--ink-2);flex:none}
+  .back{display:inline-flex;align-items:center;gap:.4rem;background:none;border:0;
+    color:var(--accent);font-weight:700;cursor:pointer;padding:.7rem .2rem;
+    min-height:44px;margin:.5rem 0 0;font-size:.98rem}
+  .need{background:var(--line-2);border-radius:12px;padding:.75rem .95rem;margin:1.1rem 0 0;
+    font-size:.92rem;color:var(--ink-2)}
+  .need strong{color:var(--ink);font-weight:700;display:block;margin-bottom:.15rem}
+  .finish{margin:1.1rem 0 0;padding:.8rem .95rem;border-radius:12px;
+    background:var(--accent-soft);border:1px solid var(--accent);font-size:.94rem;color:var(--ink)}
+  .finish strong{color:var(--accent);display:block;margin-bottom:.15rem}
+
+  /* ------------------------------------------------------------------- misc */
+  .btn{display:block;width:100%;min-height:52px;padding:.75rem 1rem;margin:1.1rem 0 0;
+    border-radius:12px;background:var(--card);color:var(--ink);border:2px solid var(--ink-2);
+    font-weight:700;cursor:pointer}
+  .btn:hover{border-color:var(--ink);background:var(--line-2)}
+  .quiet{color:var(--ink-2);font-size:.9rem;margin:.75rem 0 0}
+  .rules{margin:.6rem 0 0;padding-left:1.3rem} .rules li{margin:.55rem 0}
+  [contenteditable]{display:inline-block;min-width:5ch;font-weight:700;color:var(--ink);
+    border-bottom:2px dashed var(--line);padding:0 .2rem}
+  [contenteditable]:hover{border-bottom-color:var(--ink-2)}
+
+  /* -------------------------------------------------------------------- nav */
+  nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);
+    border-top:1px solid var(--line);
+    padding:.3rem .5rem calc(.3rem + env(safe-area-inset-bottom))}
+  .navin{max-width:34rem;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:.25rem}
+  nav button{background:none;border:0;cursor:pointer;color:var(--ink-2);border-radius:12px;
+    padding:.5rem .25rem;min-height:60px;display:grid;gap:.15rem;justify-items:center;
+    font-size:.78rem;font-weight:650}
+  nav button .ic{font-size:1.25rem;line-height:1}
+  nav button:hover{background:var(--line-2);color:var(--ink)}
+  .app[data-view="today"] nav [data-go="today"],
+  .app[data-view="week"]  nav [data-go="week"],
+  .app[data-view="rooms"] nav [data-go="rooms"]{background:var(--accent-soft);color:var(--accent)}
+
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="app" data-view="today" data-who="" data-room="">
+
+<!-- =============================================================== picker -->
+<div class="picker">
+  <h1>Who is using this?</h1>
+  <p>Tap your name. You will only see your own jobs.</p>
+  <div class="pickrow">
+    <button class="pick a" data-pick="A"><span class="av" aria-hidden="true">1</span>
+      <strong><span data-name="A">Elliott</span></strong></button>
+    <button class="pick b" data-pick="B"><span class="av" aria-hidden="true">2</span>
+      <strong><span data-name="B">Garrett</span></strong></button>
+  </div>
+  <p class="quiet">This stays on your phone. It changes nothing for the other person.</p>
+</div>
+
+<div class="after-pick">
+
+<header>
+  <span class="me" data-p="A" data-only="A"><span class="av" aria-hidden="true">1</span><span data-name="A">Elliott</span></span>
+  <span class="me" data-p="B" data-only="B"><span class="av" aria-hidden="true">2</span><span data-name="B">Garrett</span></span>
+  <button class="linkbtn" data-go="about">Settings</button>
+</header>
+
+<!-- ================================================================ TODAY -->
+<div class="view view-today">
+  <div class="head"><h2>Today</h2><p>Five short things. About five minutes.</p></div>
+  <div class="card" data-list="today">
+    <ul class="tasks">
+      <li><label class="task"><input type="checkbox"><span class="t">Wash your dishes<small>Or load the dishwasher. An empty sink is the goal.</small></span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Wipe up any spill you made</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Take your things back to your room<small>Shoes, cups, chargers, mail.</small></span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Clear your spot at the table</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Hang your towel up</span></label></li>
+    </ul>
+  </div>
+  <div class="alldone"><strong>That is everything for today.</strong> Nothing else is due.</div>
+
+  <div class="card pad" style="margin-top:1.6rem">
+    <h3 style="padding-top:0">Your job this week</h3>
+    <p data-only="A" style="font-weight:700">Clean the bathroom</p>
+    <p data-only="B" style="font-weight:700">Clean the kitchen</p>
+    <p class="quiet">Plus your own room and laundry. Tap <strong>This week</strong> to see them.</p>
+  </div>
+</div>
+
+<!-- ============================================================= THIS WEEK -->
+<div class="view view-week">
+  <div class="head"><h2>This week</h2><p>The same jobs every week, so you never have to work it out.</p></div>
+
+  <div class="card" data-list="week-a" data-only="A">
+    <h3>Yours</h3>
+    <ul class="tasks">
+      <li><label class="task"><input type="checkbox"><span class="t">Clean the bathroom<small>Steps are under How to clean.</small></span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Vacuum the living room and dining area</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Take the recycling out</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Your bedroom</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Your laundry</span></label></li>
+    </ul>
+  </div>
+  <div class="card" data-list="week-b" data-only="B">
+    <h3>Yours</h3>
+    <ul class="tasks">
+      <li><label class="task"><input type="checkbox"><span class="t">Clean the kitchen<small>Steps are under How to clean.</small></span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Mop the kitchen and bathroom floors</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Take the trash out</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Your bedroom</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Your laundry</span></label></li>
+    </ul>
+  </div>
+
+  <div class="card" data-list="reset">
+    <h3>Together on <span contenteditable="true" role="textbox" spellcheck="false"
+      data-setting="day" aria-label="The day you both do the reset">Sunday</span></h3>
+    <ul class="tasks">
+      <li><label class="task"><input type="checkbox"><span class="t">Clear the shared surfaces<small>Strays in a basket, then put away.</small></span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Wipe the table and chairs, sweep under</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">All the trash and recycling out</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Check what you have run out of<small>Toilet paper, soap, detergent, bags.</small></span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Do one job from the extra list</span></label></li>
+    </ul>
+  </div>
+  <p class="quiet">About thirty minutes, both of you at once. Starting is the hard part, and it is easier when someone starts with you.</p>
+
+  <div class="card" data-list="extra">
+    <h3>Extra jobs, one a week</h3>
+    <ul class="tasks">
+      <li><label class="task"><input type="checkbox"><span class="t">Wipe out the fridge</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Deep clean the shower</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Dust shelves and window sills</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Wash the bath mat and towels</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Vacuum under the couch and beds</span></label></li>
+      <li><label class="task"><input type="checkbox"><span class="t">Wipe door handles and switches</span></label></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================================================================ ROOMS -->
+<div class="view view-rooms">
+  <div class="head"><h2>How to clean</h2><p>Pick a room. Tick the steps as you go, so you never lose your place.</p></div>
+  <ul class="roomlist">
+    <li><button data-room="kitchen"><span class="ic" aria-hidden="true">🍽️</span><span><strong>Kitchen</strong><span class="sub"><span data-name="B">Garrett</span>, weekly</span></span><span class="chev" aria-hidden="true">›</span></button></li>
+    <li><button data-room="bathroom"><span class="ic" aria-hidden="true">🛁</span><span><strong>Bathroom</strong><span class="sub"><span data-name="A">Elliott</span>, weekly</span></span><span class="chev" aria-hidden="true">›</span></button></li>
+    <li><button data-room="living"><span class="ic" aria-hidden="true">🛋️</span><span><strong>Living room</strong><span class="sub">Weekly</span></span><span class="chev" aria-hidden="true">›</span></button></li>
+    <li><button data-room="dining"><span class="ic" aria-hidden="true">🍴</span><span><strong>Dining area</strong><span class="sub">Daily and weekly</span></span><span class="chev" aria-hidden="true">›</span></button></li>
+    <li><button data-room="laundry"><span class="ic" aria-hidden="true">🧺</span><span><strong>Laundry</strong><span class="sub">Your own, weekly</span></span><span class="chev" aria-hidden="true">›</span></button></li>
+    <li><button data-room="bedroom"><span class="ic" aria-hidden="true">🛏️</span><span><strong>Your bedroom</strong><span class="sub">Your own, weekly</span></span><span class="chev" aria-hidden="true">›</span></button></li>
+  </ul>
+
+  <div class="room-detail" id="r-kitchen">
+    <button class="back" data-room="">‹ All rooms</button>
+    <div class="head"><h2>Kitchen</h2><p>About twenty minutes.</p></div>
+    <div class="need"><strong>What you need</strong>Dish soap, sponge, all-purpose spray, a cloth, broom, a fresh trash bag.</div>
+    <div class="card" data-list="s-kitchen"><ul class="steps">
+      <li><label class="task"><span class="num" aria-hidden="true">1.</span><input type="checkbox"><span class="t">Put all the dishes in the dishwasher or wash them</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">2.</span><input type="checkbox"><span class="t">Clear everything off the counters</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">3.</span><input type="checkbox"><span class="t">Spray and wipe the counters, then dry them</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">4.</span><input type="checkbox"><span class="t">Wipe the stovetop<small>Stuck on? Spray it, wait two minutes, then scrub.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">5.</span><input type="checkbox"><span class="t">Wipe inside the microwave<small>Heat a bowl of water for two minutes first if it is stuck on.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">6.</span><input type="checkbox"><span class="t">Wipe the fridge and cupboard doors near the handles</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">7.</span><input type="checkbox"><span class="t">Scrub the sink and rinse it</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">8.</span><input type="checkbox"><span class="t">Put everything back</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">9.</span><input type="checkbox"><span class="t">Sweep the floor<small>Under the table and in front of the fridge.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">10.</span><input type="checkbox"><span class="t">Take the trash out and put a fresh bag in</span></label></li>
+    </ul></div>
+    <div class="finish"><strong>Done looks like</strong>Counters clear and dry, sink empty, no crumbs on the floor.</div>
+  </div>
+
+  <div class="room-detail" id="r-bathroom">
+    <button class="back" data-room="">‹ All rooms</button>
+    <div class="head"><h2>Bathroom</h2><p>About twenty minutes.</p></div>
+    <div class="need"><strong>What you need</strong>Toilet cleaner, toilet brush, spray, paper towels, glass cleaner, a clean hand towel.</div>
+    <div class="card" data-list="s-bathroom"><ul class="steps">
+      <li><label class="task"><span class="num" aria-hidden="true">1.</span><input type="checkbox"><span class="t">Clear the counter and the top of the toilet</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">2.</span><input type="checkbox"><span class="t">Squirt cleaner round the inside of the toilet bowl<small>Leave it sitting while you do the next steps.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">3.</span><input type="checkbox"><span class="t">Spray and wipe the sink and counter</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">4.</span><input type="checkbox"><span class="t">Clean the mirror<small>Wipe with a dry paper towel until there are no streaks.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">5.</span><input type="checkbox"><span class="t">Wipe the outside of the toilet<small>Seat, lid, handle, base. Throw the paper towels straight out.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">6.</span><input type="checkbox"><span class="t">Scrub inside the bowl and flush</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">7.</span><input type="checkbox"><span class="t">Spray and scrub the shower, then rinse</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">8.</span><input type="checkbox"><span class="t">Put everything back</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">9.</span><input type="checkbox"><span class="t">Sweep the floor</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">10.</span><input type="checkbox"><span class="t">Put a clean hand towel out, then wash your hands</span></label></li>
+    </ul></div>
+    <div class="finish"><strong>Done looks like</strong>No streaks on the mirror, nothing on the counter that does not live there, dry floor.</div>
+  </div>
+
+  <div class="room-detail" id="r-living">
+    <button class="back" data-room="">‹ All rooms</button>
+    <div class="head"><h2>Living room</h2><p>About ten minutes.</p></div>
+    <div class="need"><strong>What you need</strong>Vacuum, spray, a dry cloth, a basket for strays.</div>
+    <div class="card" data-list="s-living"><ul class="steps">
+      <li><label class="task"><span class="num" aria-hidden="true">1.</span><input type="checkbox"><span class="t">Put stray things in a basket, then put them away</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">2.</span><input type="checkbox"><span class="t">Take cups and plates to the kitchen</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">3.</span><input type="checkbox"><span class="t">Straighten the cushions and fold the blankets</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">4.</span><input type="checkbox"><span class="t">Wipe the coffee table and side tables</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">5.</span><input type="checkbox"><span class="t">Dust the TV stand and screen with a dry cloth<small>Never spray anything on the screen.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">6.</span><input type="checkbox"><span class="t">Vacuum, including under the coffee table</span></label></li>
+    </ul></div>
+    <div class="finish"><strong>Done looks like</strong>Floor clear, and nothing on the surfaces except what lives there.</div>
+  </div>
+
+  <div class="room-detail" id="r-dining">
+    <button class="back" data-room="">‹ All rooms</button>
+    <div class="head"><h2>Dining area</h2><p>Three things daily, two more each week.</p></div>
+    <div class="card" data-list="s-dining"><ul class="steps">
+      <li><label class="task"><span class="num" aria-hidden="true">1.</span><input type="checkbox"><span class="t">Clear the table when you finish eating</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">2.</span><input type="checkbox"><span class="t">Wipe the table with a damp cloth</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">3.</span><input type="checkbox"><span class="t">Push the chairs in</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">4.</span><input type="checkbox"><span class="t">Wipe the chairs<small>Weekly. Seats and backs both.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">5.</span><input type="checkbox"><span class="t">Sweep under the table<small>Weekly. This is where most of it ends up.</small></span></label></li>
+    </ul></div>
+    <div class="finish"><strong>Done looks like</strong>Nothing on the table except what lives there.</div>
+  </div>
+
+  <div class="room-detail" id="r-laundry">
+    <button class="back" data-room="">‹ All rooms</button>
+    <div class="head"><h2>Laundry</h2><p>Your own clothes. Not a shared job.</p></div>
+    <div class="need"><strong>What you need</strong>Detergent, your hamper, and a timer on your phone.</div>
+    <div class="card" data-list="s-laundry"><ul class="steps">
+      <li><label class="task"><span class="num" aria-hidden="true">1.</span><input type="checkbox"><span class="t">Sort into darks and lights<small>Not enough for two loads? Wash it all on cold.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">2.</span><input type="checkbox"><span class="t">Load the washer and add detergent<small>Up to the line on the cap, no more.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">3.</span><input type="checkbox"><span class="t">Set it to cold and start it</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">4.</span><input type="checkbox"><span class="t">Set a timer on your phone<small>This is the step people skip. It is why clothes end up sitting wet.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">5.</span><input type="checkbox"><span class="t">Clean the lint filter, then move it to the dryer</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">6.</span><input type="checkbox"><span class="t">Set another timer</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">7.</span><input type="checkbox"><span class="t">Take the clothes out as soon as it stops</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">8.</span><input type="checkbox"><span class="t">Put everything away today</span></label></li>
+    </ul></div>
+    <div class="finish"><strong>Done looks like</strong>Both machines empty, and nothing left in a basket overnight.</div>
+    <p class="quiet"><strong>The one shared rule:</strong> do not leave your things in the washer or dryer overnight, because it blocks the other person. If you find their load sitting there, text them before you move it.</p>
+  </div>
+
+  <div class="room-detail" id="r-bedroom">
+    <button class="back" data-room="">‹ All rooms</button>
+    <div class="head"><h2>Your bedroom</h2><p>Once a week.</p></div>
+    <div class="card" data-list="s-bedroom"><ul class="steps">
+      <li><label class="task"><span class="num" aria-hidden="true">1.</span><input type="checkbox"><span class="t">Take dishes and cups to the kitchen</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">2.</span><input type="checkbox"><span class="t">Clothes in the hamper or the closet</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">3.</span><input type="checkbox"><span class="t">Strip the bed and put the sheets in the wash</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">4.</span><input type="checkbox"><span class="t">Put the clean sheets on now<small>So you are not making the bed at midnight.</small></span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">5.</span><input type="checkbox"><span class="t">Clear and wipe the dresser and nightstand</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">6.</span><input type="checkbox"><span class="t">Empty the trash bin</span></label></li>
+      <li><label class="task"><span class="num" aria-hidden="true">7.</span><input type="checkbox"><span class="t">Vacuum the floor</span></label></li>
+    </ul></div>
+    <p class="quiet"><strong>This is your room, and how tidy you keep it in between is your call.</strong> The only part that affects the other person is dishes and trash, because that is what brings smells and bugs into the rest of the place.</p>
+  </div>
+</div>
+
+<!-- ================================================================ ABOUT -->
+<div class="view view-about">
+  <button class="back" data-go="today">‹ Back</button>
+  <div class="head"><h2>Settings</h2></div>
+
+  <div class="card pad">
+    <h3 style="padding-top:0">Names</h3>
+    <p class="quiet" style="margin:0 0 .6rem">Tap a name to change it.</p>
+    <p style="margin:.4rem 0"><span data-setting="A" contenteditable="true" role="textbox" spellcheck="false" aria-label="First person's name">Elliott</span></p>
+    <p style="margin:.4rem 0"><span data-setting="B" contenteditable="true" role="textbox" spellcheck="false" aria-label="Second person's name">Garrett</span></p>
+  </div>
+
+  <div class="card pad">
+    <h3 style="padding-top:0">House rules</h3>
+    <ol class="rules">
+      <li>Clean up your own mess the same day.</li>
+      <li>If you use the last of something, add it to the list right then.</li>
+      <li>Nobody nags. Ask once, plainly, and leave it there.</li>
+      <li>A missed week is just a missed week. Nobody keeps score.</li>
+      <li>If something is not working, say so at the weekly reset.</li>
+    </ol>
+  </div>
+
+  <div class="card pad">
+    <h3 style="padding-top:0">If the split feels unfair</h3>
+    <p class="quiet" style="margin:0">Give it a month first, because most jobs feel worse before they become a habit. If it still feels lopsided, trade the job you like least.</p>
+  </div>
+
+  <div class="card pad">
+    <h3 style="padding-top:0">Keep it handy</h3>
+    <p class="quiet" style="margin:0">On an iPhone, tap the share button and choose <strong>Add to Home Screen</strong>. On Android, open the menu and choose <strong>Add to home screen</strong>. It then opens like an app.</p>
+  </div>
+
+  <button class="btn" data-pick="swap">Switch to the other person</button>
+  <button class="btn" data-clearall="1">Untick everything</button>
+</div>
+
+</div><!-- /after-pick -->
+
+<nav aria-label="Main">
+  <div class="navin">
+    <button data-go="today"><span class="ic" aria-hidden="true">✓</span>Today</button>
+    <button data-go="week"><span class="ic" aria-hidden="true">🗓️</span>This week</button>
+    <button data-go="rooms"><span class="ic" aria-hidden="true">🧽</span>How to clean</button>
+  </div>
+</nav>
+
+</div>
+
+<script>
+(function(){
+  var KEY = "cleanplan:v1", app = document.querySelector(".app");
+  var S = {};
+  try { S = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e){ S = {}; }
+  S.checks = S.checks || {}; S.names = S.names || {};
+
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+
+  // Give every checkbox a stable id from its list and position, then add the
+  // progress bar and its own reset button to each list.
+  document.querySelectorAll("[data-list]").forEach(function(card){
+    var key = card.getAttribute("data-list");
+    card.querySelectorAll('input[type="checkbox"]').forEach(function(box, i){
+      box.dataset.id = key + ":" + i;
+    });
+    var foot = document.createElement("div");
+    foot.className = "foot";
+    foot.innerHTML = '<span class="bar"><i></i></span><span class="cnt"></span>' +
+                     '<button class="reset" type="button" data-reset="' + key + '">Untick all</button>';
+    card.appendChild(foot);
+  });
+
+  function paint(){
+    document.querySelectorAll("[data-list]").forEach(function(card){
+      var boxes = [].slice.call(card.querySelectorAll('input[type="checkbox"]'));
+      if (!boxes.length) return;
+      var done = boxes.filter(function(b){ return b.checked; }).length;
+      card.querySelector(".cnt").textContent = done + " of " + boxes.length;
+      card.querySelector(".bar i").style.width = Math.round(done / boxes.length * 100) + "%";
+      card.classList.toggle("is-done", done === boxes.length);
+    });
+  }
+
+  function apply(){
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(b){
+      b.checked = !!S.checks[b.dataset.id];
+    });
+    ["A","B"].forEach(function(w){
+      var v = S.names[w];
+      if (!v) return;
+      document.querySelectorAll('[data-name="' + w + '"]').forEach(function(n){ n.textContent = v; });
+      var f = document.querySelector('[data-setting="' + w + '"]');
+      if (f && f.textContent.trim() !== v) f.textContent = v;
+    });
+    if (S.day){
+      var d = document.querySelector('[data-setting="day"]');
+      if (d && d.textContent.trim() !== S.day) d.textContent = S.day;
+    }
+    app.setAttribute("data-who", S.who || "");
+    app.setAttribute("data-view", S.view || "today");
+    app.setAttribute("data-room", S.room || "");
+    paint();
+  }
+
+  document.addEventListener("change", function(e){
+    var b = e.target;
+    if (!b || b.type !== "checkbox") return;
+    if (b.checked) S.checks[b.dataset.id] = 1; else delete S.checks[b.dataset.id];
+    save(); paint();
+  });
+
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("button");
+    if (!b) return;
+
+    if (b.dataset.go){ S.view = b.dataset.go; S.room = ""; save(); apply(); window.scrollTo(0,0); return; }
+    if (b.hasAttribute("data-room")){ S.room = b.getAttribute("data-room"); save(); apply(); window.scrollTo(0,0); return; }
+    if (b.dataset.pick){
+      S.who = b.dataset.pick === "swap" ? (S.who === "A" ? "B" : "A") : b.dataset.pick;
+      S.view = "today"; S.room = ""; save(); apply(); window.scrollTo(0,0); return;
+    }
+    if (b.dataset.reset){
+      var card = document.querySelector('[data-list="' + b.dataset.reset + '"]');
+      card.querySelectorAll('input[type="checkbox"]').forEach(function(x){
+        x.checked = false; delete S.checks[x.dataset.id];
+      });
+      save(); paint(); return;
+    }
+    if (b.dataset.clearall){ S.checks = {}; save(); apply(); }
+  });
+
+  // Editable settings: names and the reset day.
+  document.querySelectorAll("[data-setting]").forEach(function(el){
+    var k = el.getAttribute("data-setting");
+    var commit = function(){
+      var v = el.textContent.replace(/\s+/g, " ").trim();
+      if (k === "day"){ S.day = v || "Sunday"; }
+      else {
+        if (!v) v = (k === "A" ? "Elliott" : "Garrett");
+        S.names[k] = v;
+        document.querySelectorAll('[data-name="' + k + '"]').forEach(function(n){ n.textContent = v; });
+      }
+      save();
+    };
+    el.addEventListener("input", commit);
+    el.addEventListener("blur", commit);
+    el.addEventListener("keydown", function(ev){ if (ev.key === "Enter"){ ev.preventDefault(); el.blur(); } });
+  });
+
+  apply();
+})();
+</script>
+</body>
+</html>
